@@ -35,3 +35,4 @@ cmake-*/
 .vs/
 .vscode/
 .idea/
+*.spv
