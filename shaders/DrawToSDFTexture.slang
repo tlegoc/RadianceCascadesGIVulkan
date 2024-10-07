@@ -10,7 +10,7 @@ void main(uint3 id : SV_DispatchThreadID, uniform int16_t mousePosX, uniform int
     int2 mousePos = int2(mousePosX, mousePosY);
     float dist = max(distance(id.xy, mousePos) - radius, 0.0f);
 
-    if (1.0f/(dist + 0.00000001f) < 1.0f/(outputTexture[id.xy].a + 0.00000001f)) {
+    if (1.0f/(dist + 0.00000001f) > 1.0f/(outputTexture[id.xy].a + 0.00000001f)) {
         outputTexture[id.xy] = float4(r/256.0f, g/256.0f, b/256.0f, dist);
     }
 }

@@ -227,6 +227,7 @@ int main() {
     uint32_t frame = 0;
     uint32_t currentFrame = 0;
     uint32_t imageIndex = 0;
+    bool init = true;
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -253,6 +254,10 @@ int main() {
         //
         // Begin recording compute
         vkBeginCommandBuffer(computeCommandBuffers[currentFrame], &beginInfo);
+        if (init) {
+            ComputeApp::GetInstance()->ComputeQueuInitCommands(computeCommandBuffers[currentFrame]);
+        }
+
         TransitionImage(computeCommandBuffers[currentFrame], images[imageIndex], VK_IMAGE_LAYOUT_UNDEFINED,
                         VK_IMAGE_LAYOUT_GENERAL);
         // RECORD COMPUTE COMMANDS HERE
@@ -281,6 +286,10 @@ int main() {
         renderInfo.renderArea.extent = swapchain.extent;
 
         vkBeginCommandBuffer(graphicsCommandBuffers[currentFrame], &beginInfo);
+        if (init) {
+            ComputeApp::GetInstance()->GraphicsQueueInitCommands(graphicsCommandBuffers[currentFrame]);
+        }
+
         ComputeApp::GetInstance()->GraphicsQueueCommands(graphicsCommandBuffers[currentFrame], images[imageIndex],
                                                          imageViews[imageIndex], swapchain.extent);
         TransitionImage(graphicsCommandBuffers[currentFrame], images[imageIndex], VK_IMAGE_LAYOUT_GENERAL,
@@ -340,6 +349,9 @@ int main() {
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
         frame++;
+        if (init) {
+            init = false;
+        }
     }
 
     vkDeviceWaitIdle(device);

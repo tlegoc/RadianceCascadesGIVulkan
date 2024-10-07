@@ -20,6 +20,10 @@ public:
 
     virtual void Update(uint32_t frame) = 0;
 
+    virtual void ComputeQueuInitCommands(VkCommandBuffer cmd) {}
+
+    virtual void GraphicsQueueInitCommands(VkCommandBuffer cmd) {}
+
     virtual void ComputeQueueCommands(VkCommandBuffer cmd, VkImage swapchainImage, VkImageView swapchainImageView,
                                 VkExtent2D swapchainExtent) {}
 

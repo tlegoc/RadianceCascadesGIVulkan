@@ -20,7 +20,7 @@ class ComputeAppImpl : public ComputeApp {
 public:
     ComputeAppImpl() = default;
 
-    struct PushConstant {
+    struct ComputeDrawToSDFTexturePushConstant {
         uint16_t mousePosX;
         uint16_t mousePosY;
         uint16_t width;
@@ -91,7 +91,7 @@ public:
         VkPushConstantRange drawToSDFTexturePushConstantRange{};
         drawToSDFTexturePushConstantRange.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
         drawToSDFTexturePushConstantRange.offset = 0;
-        drawToSDFTexturePushConstantRange.size = sizeof(PushConstant);
+        drawToSDFTexturePushConstantRange.size = sizeof(ComputeDrawToSDFTexturePushConstant);
 
         VkPipelineLayoutCreateInfo drawToSDFTextureLayoutCreateInfo{};
         drawToSDFTextureLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -157,6 +157,10 @@ public:
                                                               VK_IMAGE_LAYOUT_GENERAL);
     }
 
+    void ComputeQueuInitCommands(VkCommandBuffer cmd) override {
+
+    }
+
     void Update(uint32_t frame) override {
         if (!ImGui::GetIO().WantCaptureMouse) {
             isLeftMouseButtonPressed = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
@@ -186,7 +190,7 @@ public:
         }
 
         // Update push constants
-        PushConstant pushConstant{};
+        ComputeDrawToSDFTexturePushConstant pushConstant{};
         pushConstant.mousePosX = isLeftMouseButtonPressed ? xpos : -1;
         pushConstant.mousePosY = isLeftMouseButtonPressed ? ypos : -1;
         pushConstant.width = WINDOW_WIDTH;
@@ -199,7 +203,7 @@ public:
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, drawToSDFTexturePipeline);
         vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, drawToSDFTextureLayout, 0, 1,
                                 &drawToSDFTextureDescriptorSet, 0, nullptr);
-        vkCmdPushConstants(cmd, drawToSDFTextureLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(PushConstant),
+        vkCmdPushConstants(cmd, drawToSDFTextureLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputeDrawToSDFTexturePushConstant),
                            &pushConstant);
 
         vkCmdDispatch(cmd, WINDOW_WIDTH / 8, WINDOW_HEIGHT / 8, 1);
