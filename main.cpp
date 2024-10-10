@@ -255,7 +255,7 @@ int main() {
         // Begin recording compute
         vkBeginCommandBuffer(computeCommandBuffers[currentFrame], &beginInfo);
         if (init) {
-            ComputeApp::GetInstance()->ComputeQueuInitCommands(computeCommandBuffers[currentFrame]);
+            ComputeApp::GetInstance()->ComputeQueueInitCommands(computeCommandBuffers[currentFrame]);
         }
 
         TransitionImage(computeCommandBuffers[currentFrame], images[imageIndex], VK_IMAGE_LAYOUT_UNDEFINED,

@@ -16,11 +16,13 @@
 // Avoid loading shaders through the filesystem, because i'm lazy
 #include <PipelineBuilder.h>
 #include <Shaders/DrawToSDFTexture.h>
+#include <Shaders/FillTextureFloat4.h>
 
 class ComputeAppImpl : public ComputeApp {
 public:
     ComputeAppImpl() = default;
 
+    // TODO FIX ALIGNMENT ISSUES
     struct ComputeDrawToSDFTexturePushConstant {
         uint16_t mousePosX;
         uint16_t mousePosY;
@@ -30,6 +32,21 @@ public:
         uint8_t r;
         uint8_t g;
         uint8_t b;
+    };
+
+    // TODO FIX ALIGNMENT ISSUES
+    struct FillTextureFloat4PushConstant {
+        // uint16_t width;
+        // uint16_t height;
+        union {
+            float value[4];
+            struct {
+                float r;
+                float g;
+                float b;
+                float a;
+            };
+        };
     };
 
     void Init() override {
@@ -66,14 +83,34 @@ public:
         pipelineBuilder.SetPipelineType(Pipeline::COMPUTE);
         pipelineBuilder.SetPushConstantSize<ComputeDrawToSDFTexturePushConstant>(VK_SHADER_STAGE_COMPUTE_BIT);
 
-        drawToSDFTexturePipelinePtr = pipelineBuilder.Build();
+        drawToSDFTexturePipeline = pipelineBuilder.Build();
 
         // Set descriptor set
-        VkDescriptorImageInfo drawToSDFTextureDescriptorImageInfo{};
-        drawToSDFTextureDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-        drawToSDFTextureDescriptorImageInfo.imageView = computeTargetImage.view;
-        drawToSDFTextureDescriptorImageInfo.sampler = VK_NULL_HANDLE;
-        drawToSDFTexturePipelinePtr->WriteToDescriptorSet(0, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &drawToSDFTextureDescriptorImageInfo, nullptr);
+        VkDescriptorImageInfo descriptorImageInfo{};
+        descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        descriptorImageInfo.imageView = computeTargetImage.view;
+        descriptorImageInfo.sampler = VK_NULL_HANDLE;
+        drawToSDFTexturePipeline.WriteToDescriptorSet(0, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfo, nullptr);
+
+        pipelineBuilder.Reset();
+
+        pipelineBuilder.AddShaderStage(FillTextureFloat4, sizeof(FillTextureFloat4), VK_SHADER_STAGE_COMPUTE_BIT);
+
+        // Draw to SDF pipeline
+        VkDescriptorSetLayoutBinding fillTextureFloat4DescriptorSetLayoutBinding{};
+        drawToSDFTextureDescriptorSetLayoutBinding.binding = 0;
+        drawToSDFTextureDescriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        drawToSDFTextureDescriptorSetLayoutBinding.descriptorCount = 1;
+        drawToSDFTextureDescriptorSetLayoutBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+        drawToSDFTextureDescriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+        pipelineBuilder.AddBinding(0, drawToSDFTextureDescriptorSetLayoutBinding);
+
+        pipelineBuilder.SetPipelineType(Pipeline::COMPUTE);
+        pipelineBuilder.SetPushConstantSize<FillTextureFloat4PushConstant>(VK_SHADER_STAGE_COMPUTE_BIT);
+
+        fillTextureFloat4Pipeline = pipelineBuilder.Build();
+
+        fillTextureFloat4Pipeline.WriteToDescriptorSet(0, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfo, nullptr);
 
         VkSamplerCreateInfo imguiSamplerCreateInfo{};
         imguiSamplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -94,8 +131,23 @@ public:
                                                               VK_IMAGE_LAYOUT_GENERAL);
     }
 
-    void ComputeQueuInitCommands(VkCommandBuffer cmd) override {
+    void ComputeQueueInitCommands(VkCommandBuffer cmd) override {
+        if (currentComputeImageLayout != VK_IMAGE_LAYOUT_GENERAL) {
+            TransitionImage(cmd, computeTargetImage.image, currentComputeImageLayout, VK_IMAGE_LAYOUT_GENERAL);
+            currentComputeImageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        }
 
+        fillTextureFloat4Pipeline.Bind(cmd, VK_PIPELINE_BIND_POINT_COMPUTE);
+        FillTextureFloat4PushConstant pushConstant{};
+        // pushConstant.width = WINDOW_WIDTH;
+        // pushConstant.height = WINDOW_HEIGHT;
+        pushConstant.r = 0.0f;
+        pushConstant.g = 0.0f;
+        pushConstant.b = 0.0f;
+        pushConstant.a = 1000000.0f;
+
+        fillTextureFloat4Pipeline.SetPushConstant(cmd, VK_SHADER_STAGE_COMPUTE_BIT, &pushConstant);
+        fillTextureFloat4Pipeline.Dispatch(cmd, WINDOW_WIDTH / 8, WINDOW_HEIGHT / 8, 1);
     }
 
     void Update(uint32_t frame) override {
@@ -121,11 +173,6 @@ public:
         double xpos, ypos;
         glfwGetCursorPos(window, &xpos, &ypos);
 
-        if (currentComputeImageLayout != VK_IMAGE_LAYOUT_GENERAL) {
-            TransitionImage(cmd, computeTargetImage.image, currentComputeImageLayout, VK_IMAGE_LAYOUT_GENERAL);
-            currentComputeImageLayout = VK_IMAGE_LAYOUT_GENERAL;
-        }
-
         // Update push constants
         ComputeDrawToSDFTexturePushConstant pushConstant{};
         pushConstant.mousePosX = isLeftMouseButtonPressed ? xpos : -1;
@@ -137,10 +184,10 @@ public:
         pushConstant.g = std::clamp((int) (255 * color[1]), 0, 255);
         pushConstant.b = std::clamp((int) (255 * color[2]), 0, 255);
 
-        drawToSDFTexturePipelinePtr->Bind(cmd, VK_PIPELINE_BIND_POINT_COMPUTE);
-        drawToSDFTexturePipelinePtr->SetPushConstant(cmd, VK_SHADER_STAGE_COMPUTE_BIT, &pushConstant);
+        drawToSDFTexturePipeline.Bind(cmd, VK_PIPELINE_BIND_POINT_COMPUTE);
+        drawToSDFTexturePipeline.SetPushConstant(cmd, VK_SHADER_STAGE_COMPUTE_BIT, &pushConstant);
 
-        drawToSDFTexturePipelinePtr->Dispatch(cmd, WINDOW_WIDTH / 8, WINDOW_HEIGHT / 8, 1);
+        drawToSDFTexturePipeline.Dispatch(cmd, WINDOW_WIDTH / 8, WINDOW_HEIGHT / 8, 1);
     }
 
     void GraphicsQueueCommands(VkCommandBuffer cmd, VkImage swapchainImage, VkImageView swapchainImageView,
@@ -162,6 +209,8 @@ public:
     }
 
     void Cleanup() override {
+        fillTextureFloat4Pipeline.Destroy();
+        drawToSDFTexturePipeline.Destroy();
         ImGui_ImplVulkan_RemoveTexture(imguiImageDescriptorSet);
         vkDestroySampler(device, imguiSampler, nullptr);
         DestroyImage(device, allocator, computeTargetImage);
@@ -172,7 +221,8 @@ private:
     VkSampler imguiSampler{};
     VkImageLayout currentComputeImageLayout{};
     VkDescriptorSet imguiImageDescriptorSet{};
-    PipelinePtr drawToSDFTexturePipelinePtr;
+    Pipeline drawToSDFTexturePipeline{};
+    Pipeline fillTextureFloat4Pipeline{};
     bool isLeftMouseButtonPressed = false;
 
     // Settings

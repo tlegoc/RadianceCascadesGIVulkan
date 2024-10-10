@@ -7,7 +7,12 @@
 
 #include <utility>
 
+Pipeline::Pipeline() = default;
+
 void Pipeline::Bind(VkCommandBuffer cmd, VkPipelineBindPoint bindPoint) {
+    if (!m_valid) {
+        throw std::runtime_error("Pipeline not valid");
+    }
     vkCmdBindPipeline(cmd, bindPoint, m_pipeline);
 
     for (auto &[key, descriptorSet]: m_descriptorSets) {
@@ -17,6 +22,10 @@ void Pipeline::Bind(VkCommandBuffer cmd, VkPipelineBindPoint bindPoint) {
 
 void Pipeline::WriteToDescriptorSet(uint32_t set, uint32_t binding, VkDescriptorType type,
                                     VkDescriptorImageInfo *imageInfo, VkDescriptorBufferInfo *bufferInfo) {
+    if (!m_valid) {
+        throw std::runtime_error("Pipeline not valid");
+    }
+
     VkWriteDescriptorSet writeDescriptorSet{};
     writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writeDescriptorSet.dstSet = m_descriptorSets[set];
@@ -30,10 +39,16 @@ void Pipeline::WriteToDescriptorSet(uint32_t set, uint32_t binding, VkDescriptor
 }
 
 void Pipeline::SetPushConstant(VkCommandBuffer cmd, VkShaderStageFlags stage, const void *data, size_t size) {
+    if (!m_valid) {
+        throw std::runtime_error("Pipeline not valid");
+    }
     vkCmdPushConstants(cmd, m_layout, stage, 0, size, data);
 }
 
 void Pipeline::Dispatch(VkCommandBuffer cmd, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) {
+    if (!m_valid) {
+        throw std::runtime_error("Pipeline not valid");
+    }
     vkCmdDispatch(cmd, groupCountX, groupCountY, groupCountZ);
 }
 
@@ -48,9 +63,13 @@ Pipeline::Pipeline(PipelineType type, VkDevice device, VkPipeline pipeline, VkPi
     m_descriptorSets = std::move(descriptorSets);
     m_descriptorPool = descriptorPool;
     m_descriptorSetLayouts = std::move(descriptorSetLayouts);
+    m_valid = true;
 }
 
-Pipeline::~Pipeline() {
+void Pipeline::Destroy() {
+    if (!m_valid) {
+        throw std::runtime_error("Pipeline not valid");
+    }
     for (auto &[key, layout]: m_descriptorSetLayouts) {
         vkDestroyDescriptorSetLayout(m_device, layout, nullptr);
     }
@@ -101,7 +120,7 @@ void PipelineBuilder::SetPushConstantSize(VkShaderStageFlags stage, size_t size)
     m_ranges[stage] = range;
 }
 
-PipelinePtr PipelineBuilder::Build() {
+Pipeline PipelineBuilder::Build() {
     // Crete descriptor set layout
     std::unordered_map<uint32_t, VkDescriptorSetLayout> descriptorSetLayouts;
     std::vector<VkDescriptorPoolSize> poolSizes;
@@ -192,7 +211,14 @@ PipelinePtr PipelineBuilder::Build() {
         vkDestroyShaderModule(m_device, shader, nullptr);
     }
 
-    Pipeline *p = new Pipeline(m_type, m_device, pipeline, pipelineLayout, descriptorSets, descriptorSetLayouts, pool);
+    return Pipeline(m_type, m_device, pipeline, pipelineLayout, descriptorSets, descriptorSetLayouts, pool);
 
-    return PipelinePtr(p);
+}
+
+void PipelineBuilder::Reset() {
+    m_type = {};
+    m_bindings = {};
+    m_stages = {};
+    m_shaderModules = {};
+    m_ranges = {};
 }

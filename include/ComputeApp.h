@@ -20,7 +20,7 @@ public:
 
     virtual void Update(uint32_t frame) = 0;
 
-    virtual void ComputeQueuInitCommands(VkCommandBuffer cmd) {}
+    virtual void ComputeQueueInitCommands(VkCommandBuffer cmd) {}
 
     virtual void GraphicsQueueInitCommands(VkCommandBuffer cmd) {}
 

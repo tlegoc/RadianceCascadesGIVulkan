@@ -12,7 +12,9 @@ class PipelineBuilder;
 
 class Pipeline {
 public:
-    ~Pipeline();
+    Pipeline();
+
+    void Destroy();
 
     enum PipelineType {
         GRAPHICS,
@@ -25,8 +27,8 @@ public:
                               VkDescriptorBufferInfo *bufferInfo);
 
     template<typename T>
-    void SetPushConstant(VkCommandBuffer cmd, VkShaderStageFlags stage, T data) {
-        SetPushConstant(cmd, stage, &data, sizeof(T));
+    void SetPushConstant(VkCommandBuffer cmd, VkShaderStageFlags stage, T* data) {
+        SetPushConstant(cmd, stage, data, sizeof(T));
     }
 
     void SetPushConstant(VkCommandBuffer cmd, VkShaderStageFlags stage, const void *data, size_t size);
@@ -40,16 +42,15 @@ private:
              std::unordered_map<uint32_t, VkDescriptorSet> descriptorSets,
              std::unordered_map<uint32_t, VkDescriptorSetLayout> descriptorSetLayouts, VkDescriptorPool descriptorPool);
 
-    PipelineType m_type;
-    VkDevice m_device;
-    VkPipeline m_pipeline;
-    VkPipelineLayout m_layout;
-    std::unordered_map<uint32_t, VkDescriptorSetLayout> m_descriptorSetLayouts;
-    std::unordered_map<uint32_t, VkDescriptorSet> m_descriptorSets;
-    VkDescriptorPool m_descriptorPool;
+    bool m_valid = false;
+    PipelineType m_type{};
+    VkDevice m_device{};
+    VkPipeline m_pipeline{};
+    VkPipelineLayout m_layout{};
+    std::unordered_map<uint32_t, VkDescriptorSetLayout> m_descriptorSetLayouts{};
+    std::unordered_map<uint32_t, VkDescriptorSet> m_descriptorSets{};
+    VkDescriptorPool m_descriptorPool{};
 };
-
-typedef std::shared_ptr<Pipeline> PipelinePtr;
 
 class PipelineBuilder {
 public:
@@ -71,7 +72,9 @@ public:
 
     void SetPushConstantSize(VkShaderStageFlags stage, size_t size);
 
-    PipelinePtr Build();
+    Pipeline Build();
+
+    void Reset();
 
 private:
     Pipeline::PipelineType m_type{};
