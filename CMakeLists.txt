@@ -64,7 +64,7 @@ foreach(shader ${shader_SOURCES})
 
     add_custom_command(
             OUTPUT ${shader_OUTPUT}
-            COMMAND ${SLANGC} ${shader_SOURCE} -entry main -target spirv -o ${SHADER_OUTPUT_DIR}/${shader_OUTPUT} -source-embed-style u32 -source-embed-name ${shader}
+            COMMAND ${SLANGC} ${shader_SOURCE} -entry main -target spirv -o ${SHADER_OUTPUT_DIR}/${shader_OUTPUT} -source-embed-style u32 -source-embed-name ${shader} -fvk-use-gl-layout
             DEPENDS ${shader_SOURCE}
     )
 
@@ -74,7 +74,7 @@ foreach(shader ${shader_SOURCES})
         set(shader_OUTPUT_GLSL "${shader}.glsl")
         add_custom_command(
                 OUTPUT ${shader_OUTPUT_GLSL}
-                COMMAND ${SLANGC} ${shader_SOURCE} -entry main -target glsl -o ${SHADER_OUTPUT_DIR}/${shader_OUTPUT_GLSL}
+                COMMAND ${SLANGC} ${shader_SOURCE} -entry main -target glsl -o ${SHADER_OUTPUT_DIR}/${shader_OUTPUT_GLSL} -fvk-use-gl-layout
                 DEPENDS ${shader_SOURCE}
         )
         list(APPEND shader_OUTPUTS ${shader_OUTPUT_GLSL})

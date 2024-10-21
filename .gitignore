@@ -36,3 +36,5 @@ cmake-*/
 .vscode/
 .idea/
 *.spv
+out/
+CMakeSettings.json

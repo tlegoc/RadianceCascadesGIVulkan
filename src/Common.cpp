@@ -48,7 +48,7 @@ Image CreateImage(VkDevice device, VkImageCreateInfo imgCreateInfo, VmaAllocator
     VkImageViewCreateInfo viewCreateInfo{};
     viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewCreateInfo.image = img;
-    viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewCreateInfo.viewType = imgCreateInfo.imageType == VK_IMAGE_TYPE_2D ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_3D;
     viewCreateInfo.format = imgCreateInfo.format;
     viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     viewCreateInfo.subresourceRange.baseMipLevel = 0;
@@ -78,4 +78,20 @@ VkShaderModule CreateShaderModule(VkDevice device, const uint32_t *code, size_t 
     VK_CHECK(vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule));
 
     return shaderModule;
+}
+
+void CmdWaitForPipelineStage(VkCommandBuffer cmd, VkPipelineStageFlags2 stage) {
+    VkMemoryBarrier2 barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
+    barrier.srcStageMask = stage;
+    barrier.dstStageMask = stage;
+
+    VkDependencyInfo depInfo{};
+    depInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+    depInfo.pNext = nullptr;
+
+    depInfo.memoryBarrierCount = 1;
+    depInfo.pMemoryBarriers = &barrier;
+
+    vkCmdPipelineBarrier2(cmd, &depInfo);
 }

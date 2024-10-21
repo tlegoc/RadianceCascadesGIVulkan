@@ -8,8 +8,6 @@
 #include <unordered_map>
 #include <vulkan/vulkan_core.h>
 
-class PipelineBuilder;
-
 class Pipeline {
 public:
     Pipeline();
@@ -35,13 +33,11 @@ public:
 
     void Dispatch(VkCommandBuffer cmd, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
 
-private:
-    friend class PipelineBuilder;
 
     Pipeline(PipelineType type, VkDevice device, VkPipeline pipeline, VkPipelineLayout layout,
              std::unordered_map<uint32_t, VkDescriptorSet> descriptorSets,
              std::unordered_map<uint32_t, VkDescriptorSetLayout> descriptorSetLayouts, VkDescriptorPool descriptorPool);
-
+private:
     bool m_valid = false;
     PipelineType m_type{};
     VkDevice m_device{};
@@ -54,7 +50,11 @@ private:
 
 class PipelineBuilder {
 public:
-    PipelineBuilder(VkDevice device);
+    explicit PipelineBuilder(VkDevice device);
+
+    ~PipelineBuilder() {
+        Reset();
+    }
 
     void AddBinding(int set, VkDescriptorSetLayoutBinding binding);
 

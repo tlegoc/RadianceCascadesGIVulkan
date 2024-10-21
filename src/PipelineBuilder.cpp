@@ -207,15 +207,13 @@ Pipeline PipelineBuilder::Build() {
             break;
     }
 
-    for (auto &shader: m_shaderModules) {
-        vkDestroyShaderModule(m_device, shader, nullptr);
-    }
-
     return Pipeline(m_type, m_device, pipeline, pipelineLayout, descriptorSets, descriptorSetLayouts, pool);
-
 }
 
 void PipelineBuilder::Reset() {
+    for (auto &shader: m_shaderModules) {
+        vkDestroyShaderModule(m_device, shader, nullptr);
+    }
     m_type = {};
     m_bindings = {};
     m_stages = {};

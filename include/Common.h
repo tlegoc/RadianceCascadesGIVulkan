@@ -22,9 +22,13 @@ throw std::runtime_error(std::format("Detected Vulkan error: {}", string_VkResul
 void TransitionImage(VkCommandBuffer cmd, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 struct Image {
-    VkImage image;
-    VkImageView view;
-    VmaAllocation memory;
+    VkImage image = VK_NULL_HANDLE;
+    VkImageView view = VK_NULL_HANDLE;
+    VmaAllocation memory{};
+
+    bool Initialized() const {
+        return image != VK_NULL_HANDLE;
+    }
 };
 
 Image CreateImage(VkDevice device, VkImageCreateInfo imgCreateInfo, VmaAllocator allocator);
@@ -32,3 +36,5 @@ Image CreateImage(VkDevice device, VkImageCreateInfo imgCreateInfo, VmaAllocator
 void DestroyImage(VkDevice device, VmaAllocator allocator, Image img);
 
 VkShaderModule CreateShaderModule(VkDevice device, const uint32_t* code, size_t size);
+
+void CmdWaitForPipelineStage(VkCommandBuffer cmd, VkPipelineStageFlags2 stage);
