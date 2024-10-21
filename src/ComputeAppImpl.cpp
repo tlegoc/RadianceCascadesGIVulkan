@@ -322,6 +322,9 @@ public:
                 DestroyImage(device, allocator, raymarchImage);
             }
         }
+        if (globalIlluminationImage.Initialized()) {
+            DestroyImage(device, allocator, globalIlluminationImage);
+        }
         raymarchImages.clear();
 
         radianceCascadeSettings = newRadianceCascadeSettings;
@@ -475,7 +478,7 @@ public:
         uint32_t cascadeHeight = radianceCascadeSettings.verticalProbeCountAtMaxLevel * maxLevelCascadeProbeResolution;
 
         for (int i = 0; i < radianceCascadeSettings.maxLevel; i++) {
-            CmdWaitForPipelineStage(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+            // CmdWaitForPipelineStage(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT); // No need, can be done in parallel
             raymarchPushConstant.currentLevel = i;
             raymarchPipelines[i].Bind(cmd, VK_PIPELINE_BIND_POINT_COMPUTE);
             raymarchPipelines[i].SetPushConstant(cmd, VK_SHADER_STAGE_COMPUTE_BIT, &raymarchPushConstant);
