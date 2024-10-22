@@ -48,7 +48,11 @@ target_link_libraries(ComputeApp vk-bootstrap glfw GPUOpen::VulkanMemoryAllocato
 add_subdirectory(imgui)
 add_subdirectory(src)
 
-find_program(SLANGC slangc REQUIRED)
+# Find slangc if SLANGC is not set
+if (NOT SLANGC)
+    message(STATUS "SLANGC not set, trying to find it")
+    find_program(SLANGC slangc REQUIRED)
+endif ()
 
 # Compile shaders
 file(GLOB_RECURSE shader_SOURCES CONFIGURE_DEPENDS shaders/*.slang)
