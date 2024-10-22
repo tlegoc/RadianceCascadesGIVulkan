@@ -411,7 +411,7 @@ public:
         descriptorImageInfoInputCascade.sampler = VK_NULL_HANDLE;
         buildGITexturePipeline.WriteToDescriptorSet(0, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfoInputCascade, nullptr);
 
-        VkDescriptorImageInfo descriptorImageInfoInputGI{};
+        VkDescriptorImageInfo descriptorImageInfoInputGI{};  
         descriptorImageInfoInputGI.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
         descriptorImageInfoInputGI.imageView = globalIlluminationImage.view;
         descriptorImageInfoInputGI.sampler = linearSampler;
