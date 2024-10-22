@@ -17,9 +17,11 @@ int main() {
 
     vkb::InstanceBuilder instanceBuilder;
     auto instanceBuilderResult = instanceBuilder.set_app_name("Example Vulkan Application")
+#ifndef NDEBUG
             .enable_validation_layers()
-            .require_api_version(1, 3, 0)
             .use_default_debug_messenger()
+#endif
+            .require_api_version(1, 3, 0)
             .build();
 
     if (!instanceBuilderResult) {
