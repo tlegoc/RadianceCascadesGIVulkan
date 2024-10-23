@@ -89,7 +89,7 @@ jobs:
       with:
         type: 'zip'
         filename: ${{ matrix.build_type }}-${{ github.ref_name }}-${{ matrix.os }}.zip 
-        exclusions: '/*_deps/* /*src/* /*shader_headers/* /*imgui/* /*CMakeFiles/* *.cmake CMakeCache.txt *.ninja .ninja_log .ninja_deps'
+        exclusions: '_deps/* src/* shader_headers/* imgui/* CMakeFiles/* *.cmake CMakeCache.txt *.ninja .ninja_log .ninja_deps'
         directory: ${{ steps.build.outputs.build-dir }}
         
     - name: Upload
