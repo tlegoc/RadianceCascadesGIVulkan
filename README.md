@@ -1,5 +1,7 @@
 # RadianceCascadeGIVulkan
 
+[Blog post](https://tlegoc.github.io/blogs/radiance-cascade/)
+
 Vulkan implementation of radiance cascades for global illumination. 
 https://www.youtube.com/watch?v=lpKE0YDOlZA
 
