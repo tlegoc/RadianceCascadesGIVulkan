@@ -1,6 +1,7 @@
 # RadianceCascadeGIVulkan
 
-Vulkan implementation of radiance cascades for global illumination.
+Vulkan implementation of radiance cascades for global illumination. 
+https://www.youtube.com/watch?v=lpKE0YDOlZA
 
 ![img.png](img.png)
 ![img_1.png](img_1.png)
