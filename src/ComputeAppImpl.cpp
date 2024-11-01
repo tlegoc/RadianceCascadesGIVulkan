@@ -86,9 +86,9 @@ public:
 
         VkSamplerCreateInfo sdfSamplerCreateInfo{};
         sdfSamplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        sdfSamplerCreateInfo.magFilter = VK_FILTER_LINEAR;
-        sdfSamplerCreateInfo.minFilter = VK_FILTER_LINEAR;
-        sdfSamplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        sdfSamplerCreateInfo.magFilter = VK_FILTER_NEAREST; //VK_FILTER_LINEAR;
+        sdfSamplerCreateInfo.minFilter = VK_FILTER_NEAREST; //VK_FILTER_LINEAR;
+        sdfSamplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST; // VK_SAMPLER_MIPMAP_MODE_LINEAR;
         sdfSamplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         sdfSamplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         sdfSamplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
@@ -128,7 +128,8 @@ public:
         descriptorImageInfoSDFImage.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
         descriptorImageInfoSDFImage.imageView = sdfImage.view;
         descriptorImageInfoSDFImage.sampler = VK_NULL_HANDLE;
-        drawToSDFTexturePipeline.WriteToDescriptorSet(0, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfoSDFImage, nullptr);
+        drawToSDFTexturePipeline.WriteToDescriptorSet(0, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                                                      &descriptorImageInfoSDFImage, nullptr);
 
         pipelineBuilder.Reset();
 
@@ -148,7 +149,8 @@ public:
 
         fillTextureFloat4Pipeline = pipelineBuilder.Build();
 
-        fillTextureFloat4Pipeline.WriteToDescriptorSet(0, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfoSDFImage, nullptr);
+        fillTextureFloat4Pipeline.WriteToDescriptorSet(0, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                                                       &descriptorImageInfoSDFImage, nullptr);
 
         pipelineBuilder.Reset();
 
@@ -172,14 +174,16 @@ public:
 
         finalPassPipeline = pipelineBuilder.Build();
 
-        finalPassPipeline.WriteToDescriptorSet(0, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfoSDFImage, nullptr);
+        finalPassPipeline.WriteToDescriptorSet(0, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfoSDFImage,
+                                               nullptr);
 
         VkDescriptorImageInfo descriptorImageInfoDisplayImage{};
         descriptorImageInfoDisplayImage.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
         descriptorImageInfoDisplayImage.imageView = displayImage.view;
         descriptorImageInfoDisplayImage.sampler = VK_NULL_HANDLE;
 
-        finalPassPipeline.WriteToDescriptorSet(0, 2, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfoDisplayImage, nullptr);
+        finalPassPipeline.WriteToDescriptorSet(0, 2, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfoDisplayImage,
+                                               nullptr);
 
         pipelineBuilder.Reset();
 
@@ -207,7 +211,8 @@ public:
         descriptorImageInfoSDFImageSampler.sampler = linearSampler;
         for (int i = 0; i < MAX_LEVEL; i++) {
             raymarchPipelines.push_back(pipelineBuilder.Build());
-            raymarchPipelines.back().WriteToDescriptorSet(0, 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &descriptorImageInfoSDFImageSampler, nullptr);
+            raymarchPipelines.back().WriteToDescriptorSet(0, 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                                          &descriptorImageInfoSDFImageSampler, nullptr);
         }
 
         pipelineBuilder.Reset();
@@ -362,7 +367,8 @@ public:
             descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
             descriptorImageInfo.imageView = raymarchImage.view;
             descriptorImageInfo.sampler = VK_NULL_HANDLE;
-            raymarchPipelines[i].WriteToDescriptorSet(0, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfo, nullptr);
+            raymarchPipelines[i].WriteToDescriptorSet(0, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfo,
+                                                      nullptr);
         }
 
         raymarchImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -376,8 +382,10 @@ public:
             descriptorImageInfoOutput.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
             descriptorImageInfoOutput.imageView = raymarchImages[i].view;
             descriptorImageInfoOutput.sampler = VK_NULL_HANDLE;
-            mergeCascadesPipelines[i].WriteToDescriptorSet(0, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfoInput, nullptr);
-            mergeCascadesPipelines[i].WriteToDescriptorSet(0, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfoOutput, nullptr);
+            mergeCascadesPipelines[i].WriteToDescriptorSet(0, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                                                           &descriptorImageInfoInput, nullptr);
+            mergeCascadesPipelines[i].WriteToDescriptorSet(0, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                                                           &descriptorImageInfoOutput, nullptr);
         }
 
         VkImageCreateInfo imgCreateInfoOutputGI{};
@@ -392,7 +400,8 @@ public:
 
         imgCreateInfoOutputGI.tiling = VK_IMAGE_TILING_OPTIMAL;
         imgCreateInfoOutputGI.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imgCreateInfoOutputGI.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        imgCreateInfoOutputGI.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT |
+                                      VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
         imgCreateInfoOutputGI.samples = VK_SAMPLE_COUNT_1_BIT;
 
         globalIlluminationImage = CreateImage(device, imgCreateInfoOutputGI, allocator);
@@ -403,19 +412,22 @@ public:
         descriptorImageInfoOutputGI.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
         descriptorImageInfoOutputGI.imageView = globalIlluminationImage.view;
         descriptorImageInfoOutputGI.sampler = VK_NULL_HANDLE;
-        buildGITexturePipeline.WriteToDescriptorSet(0, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfoOutputGI, nullptr);
+        buildGITexturePipeline.WriteToDescriptorSet(0, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                                                    &descriptorImageInfoOutputGI, nullptr);
 
         VkDescriptorImageInfo descriptorImageInfoInputCascade{};
         descriptorImageInfoInputCascade.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
         descriptorImageInfoInputCascade.imageView = raymarchImages[0].view;
         descriptorImageInfoInputCascade.sampler = VK_NULL_HANDLE;
-        buildGITexturePipeline.WriteToDescriptorSet(0, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfoInputCascade, nullptr);
+        buildGITexturePipeline.WriteToDescriptorSet(0, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                                                    &descriptorImageInfoInputCascade, nullptr);
 
-        VkDescriptorImageInfo descriptorImageInfoInputGI{};  
+        VkDescriptorImageInfo descriptorImageInfoInputGI{};
         descriptorImageInfoInputGI.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
         descriptorImageInfoInputGI.imageView = globalIlluminationImage.view;
         descriptorImageInfoInputGI.sampler = linearSampler;
-        finalPassPipeline.WriteToDescriptorSet(0, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &descriptorImageInfoInputGI, nullptr);
+        finalPassPipeline.WriteToDescriptorSet(0, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                               &descriptorImageInfoInputGI, nullptr);
     }
 
     void ComputeQueueCommands(VkCommandBuffer cmd, VkImage swapchainImage, VkImageView swapchainImageView,
@@ -530,7 +542,8 @@ public:
         region.dstOffsets[1].y = swapchainExtent.height;
         region.dstOffsets[1].z = 1;
 
-        vkCmdBlitImage(cmd, displayImage.image, VK_IMAGE_LAYOUT_GENERAL, swapchainImage, VK_IMAGE_LAYOUT_GENERAL, 1, &region, VK_FILTER_LINEAR);
+        vkCmdBlitImage(cmd, displayImage.image, VK_IMAGE_LAYOUT_GENERAL, swapchainImage, VK_IMAGE_LAYOUT_GENERAL, 1,
+                       &region, VK_FILTER_LINEAR);
     }
 
     void Cleanup() override {

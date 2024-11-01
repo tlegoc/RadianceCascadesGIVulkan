@@ -1,0 +1,122 @@
+#define MAX_RAY_STEPS 64
+
+struct TextureInfo {
+    int width;
+    int height;
+    int levels;
+    float aspectRatio;
+    RWTexture2D texture;
+    Sampler2D sampler;
+}
+
+TextureInfo GetTextureInfo(RWTexture2D<float4> texture) {
+    TextureInfo info;
+
+    texture.GetDimensions(0, info.width, info.height, info.levels);
+    float2 r = float2(info.width, info.height);
+    info.aspectRatio = r.x/r.y;
+    info.texture = texture;
+
+    return info;
+}
+
+TextureInfo GetTextureInfo(Sampler2D texture) {
+    TextureInfo info;
+
+    texture.GetDimensions(0, info.width, info.height, info.levels);
+    float2 r = float2(info.width, info.height);
+    info.aspectRatio = r.x/r.y;
+    info.sampler = texture;
+    
+    return info;
+}
+
+struct Ray {
+    int id;
+    float length;
+    float startOffset;
+    float angle;
+    float2 direction;
+    float2 origin;
+}
+
+struct CascadeInfo {
+    int probeSize;
+    int2 probeCount;
+    int probeRayCount;
+    int level;
+
+    int GetRayID(uint3 id) {
+        return id.x % probeSize + (id.y % probeSize) * probeSize;
+    }
+
+    float2 GetRayOrigin(uint3 id) {
+        return (id.xy / probeSize + float2(0.5)) / probeCount;
+    }
+
+    Ray GetRay(uint3 id, float radius, float radiusMultiplier) {
+        Ray ray;
+
+        ray.id = GetRayID(id);
+
+        ray.length = radius * pow(radiusMultiplier, level);
+
+        ray.startOffset = 0;
+        for (int i = 0; i < level; i++) {
+            ray.startOffset += radius * pow(radiusMultiplier, i);
+        }
+
+        ray.angle = (ray.id + .5f) * 2 * 3.141592653589793 / probeRayCount;
+
+        ray.direction = float2(cos(ray.angle), sin(ray.angle));
+
+        ray.origin = GetRayOrigin(id);
+
+        return ray;
+    }
+}
+
+CascadeInfo GetCascadeInfo(int level, TextureInfo textureInfo) {
+    CascadeInfo info;
+
+    info.probeSize = 1 << (level + 1);
+    info.probeRayCount = info.probeSize * info.probeSize;
+    info.probeCount = float2(textureInfo.width, textureInfo.height) / info.probeSize;
+    info.level = level;
+
+    return info;
+}
+
+Ray RayCorrection(Ray ray, TextureInfo cascadeTexture, TextureInfo sdfTexture) {
+    // The probe texture is slightly bigger on the X axis
+    // we need to expand it so the probes arent placed closer together on the X
+    ray.origin.x -= .5f; // center on X
+    ray.origin.x *= cascadeTexture.aspectRatio / sdfTexture.aspectRatio; // aspect ratio correction
+    ray.origin.x += .5f; // remove centering to get uv back
+
+    ray.direction.x *= cascadeTexture.aspectRatio / sdfTexture.aspectRatio; // aspect ratio correction
+
+    return ray;
+}
+
+// TODO : More advanced and performant raymarch
+float4 Raymarch(Ray ray, float stepSize, float attenuation, TextureInfo sdf) {
+
+    float4 result = float4(0, 0, 0, 1.0f);
+    int i = 0;
+    // need to put a limit on that
+    for (float t = ray.startOffset ; t < ray.startOffset + ray.length && i < MAX_RAY_STEPS; t += stepSize) {
+        i++;
+
+        float2 pos = ray.origin + ray.direction * t;
+
+        float4 color = sdf.sampler.SampleLevel(pos, 0);
+
+        if (color.a <= 0) {
+            result = float4(color.rgb/(t * attenuation), 0.0f);
+            break;
+        }
+    }
+
+    return result;
+}

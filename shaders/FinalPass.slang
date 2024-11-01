@@ -17,7 +17,7 @@ void main(uint3 id : SV_DispatchThreadID)
 
     float2 uv = float2((float) id.x / width, (float) id.y / height);
 
-    float4 sdfValue = float4(SDF[id.xy].rgb, 1.0);
+    float4 sdfValue = SDF[id.xy];
 
     float giAspectRatio = (float) giWidth/giHeight;
     float outputAspectRatio = (float) width/height;
@@ -27,8 +27,10 @@ void main(uint3 id : SV_DispatchThreadID)
     uv.x *= outputAspectRatio / giAspectRatio;
     uv.x += .5f;
 
-    float4 giValue = inputGI.SampleLevel(uv, 0);
-    giValue.a = 0.0f;
+    float3 giValue = inputGI.SampleLevel(uv, 0).rgb;
 
-    outputTexture[id.xy] = lerp(giValue, sdfValue, max(1 - SDF[id.xy].a, 0));
+    float3 backgroundColor = float3(0.1);
+
+    outputTexture[id.xy].rgb = lerp(giValue * backgroundColor, sdfValue.rgb,  max(1 - sdfValue.a, 0));
+    outputTexture[id.xy].a = 1;
 }

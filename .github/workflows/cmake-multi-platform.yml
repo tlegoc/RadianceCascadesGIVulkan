@@ -5,10 +5,10 @@ name: CMake on multiple platforms
 on:
   release:
     types: [published]
-    
+
 permissions:
   contents: write
-  
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -50,9 +50,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-         
+
     - name: Install ubuntu build deps
-      if: ${{ matrix.os == 'ubuntu-latest' }} 
+      if: ${{ matrix.os == 'ubuntu-latest' }}
       run: sudo apt install xorg-dev libwayland-dev libxkbcommon-dev wayland-protocols extra-cmake-modules
 
     - name: Download slangc
@@ -63,20 +63,20 @@ jobs:
         fileName: ${{ matrix.slang_release }}
         out-file-path: 'slangc'
         extract: true
-        
+
     - name: Set execute permissions for slangc
-      if: ${{ matrix.os == 'ubuntu-latest' }} 
-      run: chmod +x ${{ github.workspace }}/slangc/bin/${{ matrix.slangc_exe }}
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: sudo chmod +x ${{ github.workspace }}/slangc/bin/${{ matrix.slangc_exe }}
 
     - name: Prepare Vulkan SDK
       uses: humbletim/install-vulkan-sdk@v1.1.1
       with:
          version: 1.3.290.0
          cache: true
-    
+
     - uses: seanmiddleditch/gha-setup-ninja@master
     - uses: ilammy/msvc-dev-cmd@v1
-      if: ${{ matrix.os == 'windows-latest' }} 
+      if: ${{ matrix.os == 'windows-latest' }}
 
     - name: Build
       id: build
@@ -88,16 +88,23 @@ jobs:
         options: |
           CMAKE_BUILD_TYPE=${{ matrix.build_type }}
           SLANGC=${{ github.workspace }}/slangc/bin/${{ matrix.slangc_exe }}
-      
-    - name: Archive
-      uses: thedoctor0/zip-release@0.7.5
-      with:
-        type: 'zip'
-        filename: ${{ matrix.build_type }}-${{ github.ref_name }}-${{ matrix.os }}.zip 
-        exclusions: '_deps/* src/* shader_headers/* imgui/* CMakeFiles/* *.cmake CMakeCache.txt *.ninja .ninja_log .ninja_deps'
-        directory: ${{ steps.build.outputs.build-dir }}
-        
-    - name: Upload
-      run: gh release upload ${{github.event.release.tag_name}} ${{ steps.build.outputs.build-dir }}/${{ matrix.build_type }}-${{ github.ref_name }}-${{ matrix.os }}.zip      
+
+    - name: Rename Linux
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: mv ${{ steps.build.outputs.build-dir }}/ComputeApp ${{ steps.build.outputs.build-dir }}/${{ github.ref_name }}-${{ matrix.os }}
+
+    - name: Rename Windows
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: mv ${{ steps.build.outputs.build-dir }}/ComputeApp.exe ${{ steps.build.outputs.build-dir }}/${{ github.ref_name }}-${{ matrix.os }}.exe
+
+    - name: Upload Linux
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: gh release upload ${{github.event.release.tag_name}} ${{ steps.build.outputs.build-dir }}/${{ github.ref_name }}-${{ matrix.os }}
+      env:
+        GITHUB_TOKEN: ${{ github.TOKEN }}
+
+    - name: Upload Windows
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: gh release upload ${{github.event.release.tag_name}} ${{ steps.build.outputs.build-dir }}/${{ github.ref_name }}-${{ matrix.os }}.exe
       env:
         GITHUB_TOKEN: ${{ github.TOKEN }}

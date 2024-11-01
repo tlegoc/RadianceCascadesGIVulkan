@@ -44,8 +44,6 @@ void main(uint3 id : SV_DispatchThreadID, uniform PushConstants pc)
     int2 cascadeResolution = int2(width, height);
 
     if (id.x >= width || id.y >= height) return;
-
-    if (outputCascade[id.xy].a > 0) return;
     
     int probeDimensions = 1 << (pc.outputLevel + 1);
     int probeRayCount = probeDimensions * probeDimensions;
@@ -90,6 +88,6 @@ void main(uint3 id : SV_DispatchThreadID, uniform PushConstants pc)
     float4 finalValue = lerp(lerp1, lerp2, lerpWeights.x);
     //finalValue = float4(ray1 + ray2, 0, 0, 0);
 
-    outputCascade[id.xy] += finalValue;
+    outputCascade[id.xy] += finalValue * outputCascade[id.xy].a;
     // outputCascade[id.xy] = float4(angleIndex, 0, 0, 0);
 }
