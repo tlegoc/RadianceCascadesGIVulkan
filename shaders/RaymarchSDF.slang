@@ -4,7 +4,7 @@ RWTexture2D<float4> cascadeTexture;
 
 struct PushConstants {
     uint32_t maxLevel;
-    uint32_t verticalProbeCountAtMaxLevel;
+    uint32_t verticalProbeCountAtMaxLevel; // not used
     float radius;
     float radiusMultiplier;
     float raymarchStepSize;

@@ -32,7 +32,7 @@ TextureInfo GetTextureInfo(Sampler2D texture) {
 }
 
 struct Ray {
-    int id;
+    int index;
     float length;
     float startOffset;
     float angle;
@@ -54,10 +54,14 @@ struct CascadeInfo {
         return (id.xy / probeSize + float2(0.5)) / probeCount;
     }
 
+    int2 GetProbe2DIndex(uint3 id) {
+        return id.xy / probeSize;
+    }
+
     Ray GetRay(uint3 id, float radius, float radiusMultiplier) {
         Ray ray;
 
-        ray.id = GetRayID(id);
+        ray.index = GetRayID(id);
 
         ray.length = radius * pow(radiusMultiplier, level);
 
@@ -66,7 +70,7 @@ struct CascadeInfo {
             ray.startOffset += radius * pow(radiusMultiplier, i);
         }
 
-        ray.angle = (ray.id + .5f) * 2 * 3.141592653589793 / probeRayCount;
+        ray.angle = (ray.index + .5f) * 2 * 3.141592653589793 / probeRayCount;
 
         ray.direction = float2(cos(ray.angle), sin(ray.angle));
 
@@ -94,7 +98,7 @@ Ray RayCorrection(Ray ray, TextureInfo cascadeTexture, TextureInfo sdfTexture) {
     ray.origin.x *= cascadeTexture.aspectRatio / sdfTexture.aspectRatio; // aspect ratio correction
     ray.origin.x += .5f; // remove centering to get uv back
 
-    ray.direction.x *= cascadeTexture.aspectRatio / sdfTexture.aspectRatio; // aspect ratio correction
+    ray.direction.x /= sdfTexture.aspectRatio; // aspect ratio correction
 
     return ray;
 }
@@ -113,10 +117,19 @@ float4 Raymarch(Ray ray, float stepSize, float attenuation, TextureInfo sdf) {
         float4 color = sdf.sampler.SampleLevel(pos, 0);
 
         if (color.a <= 0) {
-            result = float4(color.rgb/(t * attenuation), 0.0f);
+            result = float4(color.rgb, 0.0f);// /(t * attenuation), 0.0f);
             break;
         }
     }
 
     return result;
+}
+
+float4 GetBilinearWeights(float2 ratio) {
+    return float4(
+        (1.0 - ratio.x) * (1.0 - ratio.y),
+        ratio.x * (1.0 - ratio.y),
+        (1.0 - ratio.x) * ratio.y,
+        ratio.x * ratio.y
+    );
 }
