@@ -18,7 +18,7 @@ public:
 
     virtual void Init() = 0;
 
-    virtual void Update(uint32_t frame) = 0;
+    virtual void Update(uint32_t frame, double dt) = 0;
 
     virtual void ComputeQueueInitCommands(VkCommandBuffer cmd) {}
 

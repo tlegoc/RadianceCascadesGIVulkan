@@ -1,3 +1,4 @@
+#include <chrono>
 #include <Common.h>
 #include <ComputeApp.h>
 #include <ComputeAppConfig.h>
@@ -41,10 +42,10 @@ int main() {
     vulkan13Features.dynamicRendering = VK_TRUE;
     VkPhysicalDeviceVulkan11Features vulkan11Features{};
     vulkan11Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
-    vulkan11Features.storagePushConstant16 = VK_TRUE;
+    // vulkan11Features.storagePushConstant16 = VK_TRUE;
     VkPhysicalDeviceVulkan12Features vulkan12Features{};
     vulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-    vulkan12Features.storagePushConstant8 = VK_TRUE;
+    // vulkan12Features.storagePushConstant8 = VK_TRUE;
     vulkan12Features.shaderInt8 = VK_TRUE;
     vulkan12Features.shaderFloat16 = VK_TRUE;
     VkPhysicalDeviceFeatures features{};
@@ -94,7 +95,7 @@ int main() {
 
     vkb::SwapchainBuilder swapchainBuilder{device};
     auto swapchainBuilderResult = swapchainBuilder.use_default_format_selection()
-            .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
+            .set_desired_present_mode(VK_PRESENT_MODE_IMMEDIATE_KHR)
             .set_desired_extent(WINDOW_WIDTH, WINDOW_HEIGHT)
             .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
             .build();
@@ -231,6 +232,8 @@ int main() {
     uint32_t imageIndex = 0;
     bool init = true;
 
+    std::chrono::high_resolution_clock::time_point lastTime = std::chrono::high_resolution_clock::now();
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
@@ -238,13 +241,16 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        auto now = std::chrono::high_resolution_clock::now();
+        double dt = std::chrono::duration<double>(now - lastTime).count() * 1000.0;
+
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
         vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
         vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE,
                               &imageIndex);
 
-        ComputeApp::GetInstance()->Update(frame);
+        ComputeApp::GetInstance()->Update(frame, dt);
 
         vkResetCommandBuffer(computeCommandBuffers[currentFrame], 0);
 
@@ -354,6 +360,8 @@ int main() {
         if (init) {
             init = false;
         }
+
+        lastTime = now;
     }
 
     vkDeviceWaitIdle(device);

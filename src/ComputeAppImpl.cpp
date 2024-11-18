@@ -30,12 +30,20 @@ public:
 
     // TODO FIX ALIGNMENT ISSUES
     struct ComputeDrawToSDFTexturePushConstant {
-        uint16_t mousePosX;
-        uint16_t mousePosY;
-        uint8_t radius;
-        uint8_t r;
-        uint8_t g;
-        uint8_t b;
+        uint32_t mousePosX;
+        uint32_t mousePosY;
+        uint32_t radius;
+        union
+        {
+            struct
+            {
+                uint8_t r;
+                uint8_t g;
+                uint8_t b;
+                uint8_t a;
+            };
+            uint32_t rgba;
+        };
     };
 
     // TODO FIX ALIGNMENT ISSUES
@@ -275,7 +283,7 @@ public:
         fillTextureFloat4Pipeline.Dispatch(cmd, WINDOW_WIDTH / 8, WINDOW_HEIGHT / 8, 1);
     }
 
-    void Update(uint32_t frame) override {
+    void Update(uint32_t frame, double dt) override {
         if (!ImGui::GetIO().WantCaptureMouse) {
             isLeftMouseButtonPressed = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
         } else {
@@ -317,6 +325,11 @@ public:
         ImGui::ColorPicker3("Pen color", (float *) &color);
         ImGui::SliderInt("Radius", &radius, 1, 256);
         resetSDF = ImGui::Button("Reset SDF");
+        ImGui::End();
+
+        ImGui::Begin("Stats");
+        ImGui::Text("Frame: %d", frame);
+        ImGui::Text("FPS: %.2f (%.2f ms)", 1.0 / (dt / 1000.0), dt);
         ImGui::End();
     }
 
